@@ -9,9 +9,10 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Tracks scroll position for virtualization
+  // Scroll position for virtualization
   const [scrollTop, setScrollTop] = useState(0);
 
 
@@ -33,7 +34,8 @@ export default function Page() {
   // ================= FETCH DATA =================
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setIsFetchingMore(true);
 
       const res = await fetch(
         `/api/items?search=${debouncedSearch}&page=${page}&limit=20`
@@ -48,6 +50,7 @@ export default function Page() {
       }
 
       setLoading(false);
+      setIsFetchingMore(false);
     }
 
     fetchData();
@@ -60,6 +63,8 @@ export default function Page() {
       const target = e.target;
 
       if (
+        !loading &&
+        !isFetchingMore &&
         target.scrollTop + target.clientHeight >= target.scrollHeight - 5
       ) {
         setPage((prev) => prev + 1);
@@ -73,7 +78,7 @@ export default function Page() {
     return () => {
       container?.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [loading, isFetchingMore]);
 
 
   // ================= VIRTUALIZATION CALCULATIONS =================
@@ -113,9 +118,28 @@ export default function Page() {
 
         {/* Virtualized List */}
         <div
-          className="list-container bg-white rounded-xl shadow flex-1 overflow-y-auto relative"
+          className="list-container bg-white rounded-xl shadow overflow-y-auto relative p-3 pb-10"
+          style={{
+            height: Math.min(items.length * ITEM_HEIGHT, CONTAINER_HEIGHT),
+          }}
           onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
         >
+
+          {/* Top Loading */}
+          {loading && (
+            <div className="text-center text-gray-500 py-4">
+              Loading...
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && items.length === 0 && (
+            <div className="text-center text-gray-500 py-10">
+              No results found
+            </div>
+          )}
+
+          {/* Virtualized Items */}
           <div
             style={{
               height: items.length * ITEM_HEIGHT,
@@ -135,7 +159,7 @@ export default function Page() {
                     left: 0,
                     right: 0,
                   }}
-                  className="p-3 border-b hover:bg-blue-50"
+                  className="p-3 border-b hover:bg-blue-50 transition"
                 >
                   {item}
                 </div>
@@ -143,11 +167,13 @@ export default function Page() {
             })}
           </div>
 
-          {loading && (
+          {/* Bottom Loader */}
+          {isFetchingMore && (
             <div className="text-center text-gray-500 py-2">
-              Loading...
+              Loading more...
             </div>
           )}
+
         </div>
 
       </div>

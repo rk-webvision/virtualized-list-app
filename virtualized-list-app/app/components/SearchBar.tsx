@@ -6,6 +6,7 @@ type Props = {
 export default function SearchBar({ search, setSearch }: Props) {
 
   // ================= UI =================
+  // Controlled input for search
   return (
     <div className="bg-white p-4 rounded-xl shadow mb-4">
       <input

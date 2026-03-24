@@ -14,14 +14,25 @@ export function useVirtualization({
   containerHeight,
 }: Props) {
 
-  // ================= CALCULATIONS =================
+  // ================= CALCULATION =================
+  // Memoized calculation for performance
   return useMemo(() => {
 
+    const OVERSCAN = 5;
+
+    // Number of visible items in viewport
     const visibleCount = Math.ceil(containerHeight / itemHeight);
 
-    const startIndex = Math.floor(scrollTop / itemHeight);
-    const endIndex = startIndex + visibleCount;
+    // Start index based on scroll
+    const startIndex = Math.max(
+      0,
+      Math.floor(scrollTop / itemHeight) - OVERSCAN
+    );
 
+    // End index with buffer
+    const endIndex = startIndex + visibleCount + OVERSCAN * 2;
+
+    // Slice visible items only
     const visibleItems = items.slice(startIndex, endIndex);
 
     return {

@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "@/app/hooks/useDebounce";
+import { useInfiniteScroll } from "@/app/hooks/useInfiniteScroll";
+
+import SearchBar from "@/app/components/SearchBar";
+import VirtualizedList from "@/app/components/VirtualizedList";
 
 export default function Page() {
 
@@ -12,13 +16,8 @@ export default function Page() {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Scroll position for virtualization
+  // Scroll position (used by virtualization)
   const [scrollTop, setScrollTop] = useState(0);
-
-
-  // ================= VIRTUALIZATION CONFIG =================
-  const ITEM_HEIGHT = 50;
-  const CONTAINER_HEIGHT = 400;
 
 
   // ================= DEBOUNCE =================
@@ -34,6 +33,7 @@ export default function Page() {
   // ================= FETCH DATA =================
   useEffect(() => {
     async function fetchData() {
+
       if (page === 1) setLoading(true);
       else setIsFetchingMore(true);
 
@@ -58,36 +58,11 @@ export default function Page() {
 
 
   // ================= INFINITE SCROLL =================
-  useEffect(() => {
-    function handleScroll(e: any) {
-      const target = e.target;
-
-      if (
-        !loading &&
-        !isFetchingMore &&
-        target.scrollTop + target.clientHeight >= target.scrollHeight - 5
-      ) {
-        setPage((prev) => prev + 1);
-      }
-    }
-
-    const container = document.querySelector(".list-container");
-
-    container?.addEventListener("scroll", handleScroll);
-
-    return () => {
-      container?.removeEventListener("scroll", handleScroll);
-    };
-  }, [loading, isFetchingMore]);
-
-
-  // ================= VIRTUALIZATION CALCULATIONS =================
-  const visibleCount = Math.ceil(CONTAINER_HEIGHT / ITEM_HEIGHT);
-
-  const startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
-  const endIndex = startIndex + visibleCount;
-
-  const visibleItems = items.slice(startIndex, endIndex);
+  useInfiniteScroll({
+    loading,
+    isFetchingMore,
+    setPage,
+  });
 
 
   // ================= UI =================
@@ -107,74 +82,16 @@ export default function Page() {
         </div>
 
         {/* Search */}
-        <div className="bg-white p-4 rounded-xl shadow mb-4">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search items..."
-            className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <SearchBar search={search} setSearch={setSearch} />
 
         {/* Virtualized List */}
-        <div
-          className="list-container bg-white rounded-xl shadow overflow-y-auto relative p-3 pb-10"
-          style={{
-            height: Math.min(items.length * ITEM_HEIGHT, CONTAINER_HEIGHT),
-          }}
-          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        >
-
-          {/* Top Loading */}
-          {loading && (
-            <div className="text-center text-gray-500 py-4">
-              Loading...
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && items.length === 0 && (
-            <div className="text-center text-gray-500 py-10">
-              No results found
-            </div>
-          )}
-
-          {/* Virtualized Items */}
-          <div
-            style={{
-              height: items.length * ITEM_HEIGHT,
-              position: "relative",
-            }}
-          >
-            {visibleItems.map((item, index) => {
-              const actualIndex = startIndex + index;
-
-              return (
-                <div
-                  key={actualIndex}
-                  style={{
-                    position: "absolute",
-                    top: actualIndex * ITEM_HEIGHT,
-                    height: ITEM_HEIGHT,
-                    left: 0,
-                    right: 0,
-                  }}
-                  className="p-3 border-b hover:bg-blue-50 transition"
-                >
-                  {item}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom Loader */}
-          {isFetchingMore && (
-            <div className="text-center text-gray-500 py-2">
-              Loading more...
-            </div>
-          )}
-
-        </div>
+        <VirtualizedList
+          items={items}
+          loading={loading}
+          isFetchingMore={isFetchingMore}
+          scrollTop={scrollTop}
+          setScrollTop={setScrollTop}
+        />
 
       </div>
     </div>
